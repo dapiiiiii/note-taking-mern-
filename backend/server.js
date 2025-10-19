@@ -5,19 +5,23 @@ import dotenv from 'dotenv';
 import ratelimit from './src/controllers/config/upstash.js';
 import ratelimiter from './src/middleware/rateLimiter.js'; // ✅ lowercase
 import cors from "cors";
+import path from "path"
 
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 5002;
-
+const port = process.env.PORT || 5003;
+const __dirname = path.resolve()
+//midleware
+if(process.env.NODE_ENV !== "PRODUCTION"){
+   
 // ✅ CORS must come before routes and rate limiters
 app.use(cors({
   origin: "http://localhost:5173",
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 }));
-
+}
 // ✅ Parse JSON
 app.use(express.json());
 
@@ -33,6 +37,17 @@ connectDB().then(() => {
   app.get('/', (req, res) => {
     res.send('Welcome to Notes API!');
   });
+  if(process.env.NODE_ENV === "PRODUCTION"){
+    app.use(express.static(path.join(__dirname, "../frontend/dist")));
+  }
+
+// Serve frontend static files
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+// Serve index.html for all other routes (React routing)
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/dist", "index.html"));
+});
 
   // Start server
   app.listen(port, () => {
